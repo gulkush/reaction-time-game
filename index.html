@@ -162,6 +162,7 @@
     let timeoutId = null;
     let soundOn = false;
     let lastReaction = null;
+    let bestReaction = null;
 
     const setState = (next) => {
       state = next;
@@ -232,6 +233,9 @@
     const record = () => {
       const reaction = Math.max(0, Math.round(performance.now() - startTime));
       lastReaction = reaction;
+      if (bestReaction === null || reaction < bestReaction) {
+        bestReaction = reaction;
+      }
       timerEl.textContent = `${reaction} ms`;
       setState(State.RESULT);
       setStatus('Nice! Tap to play again.');
@@ -262,7 +266,9 @@
     });
     shareBtn.addEventListener('click', () => {
       if (lastReaction === null) return;
-      const text = `I just scored ${lastReaction} ms on this reaction time game! Can you beat it?`;
+      const bestText = bestReaction === null ? '' : ` Best: ${bestReaction} ms.`;
+      const link = window.location.href;
+      const text = `I just scored ${lastReaction} ms on this reaction time game!${bestText} Can you beat it? ${link}`;
       const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
       window.open(url, '_blank', 'noopener,noreferrer');
     });
