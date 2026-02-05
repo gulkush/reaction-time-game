@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reaction Time</title>
+  <style>
+    :root {
+      --bg: #0b0b0b;
+      --fg: #f5f5f5;
+      --accent: #39d353;
+      --warn: #ff5c5c;
+      --muted: #a8a8a8;
+      --card: rgba(255, 255, 255, 0.06);
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--fg);
+      background: radial-gradient(1200px 800px at 70% -10%, #222 0%, #0b0b0b 50%, #050505 100%);
+      display: grid;
+      place-items: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app {
+      width: min(92vw, 480px);
+      min-height: 70vh;
+      padding: 24px;
+      border-radius: 20px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 16px;
+      align-content: center;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      letter-spacing: 0.02em;
+    }
+
+    .status {
+      font-size: 1.1rem;
+      line-height: 1.4;
+    }
+
+    .timer {
+      font-size: 2.4rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .controls {
+      display: grid;
+      grid-auto-flow: column;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid transparent;
+      background: #1a1a1a;
+      color: var(--fg);
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    button:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
+    }
+
+    .screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      transition: background 0.12s ease;
+      display: grid;
+      place-items: center;
+      z-index: -1;
+    }
+
+    .screen.ready { background: #0b0b0b; }
+    .screen.wait { background: #111; }
+    .screen.go { background: var(--accent); }
+    .screen.false { background: var(--warn); }
+
+    .tap-target {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="screen ready" id="screen" aria-hidden="true"></div>
+  <div class="tap-target" id="tapTarget" aria-label="Tap to play"></div>
+
+  <main class="app" role="main">
+    <h1>Reaction Time</h1>
+    <div class="status" id="status">Tap anywhere to start.</div>
+    <div class="timer" id="timer">—</div>
+    <div class="hint" id="hint">Wait for green, then tap as fast as you can.</div>
+    <div class="controls">
+      <button id="restartBtn" type="button">Restart</button>
+      <button id="soundBtn" type="button" aria-pressed="false">Sound: Off</button>
+    </div>
+    <div class="sr-only" id="srStatus" aria-live="polite"></div>
+  </main>
+
+  <script>
+    const screen = document.getElementById('screen');
+    const tapTarget = document.getElementById('tapTarget');
+    const statusEl = document.getElementById('status');
+    const timerEl = document.getElementById('timer');
+    const hintEl = document.getElementById('hint');
+    const restartBtn = document.getElementById('restartBtn');
+    const soundBtn = document.getElementById('soundBtn');
+    const srStatus = document.getElementById('srStatus');
+
+    const State = {
+      IDLE: 'idle',
+      WAITING: 'waiting',
+      GO: 'go',
+      RESULT: 'result',
+      FALSE: 'false'
+    };
+
+    let state = State.IDLE;
+    let startTime = 0;
+    let timeoutId = null;
+    let soundOn = false;
+
+    const setState = (next) => {
+      state = next;
+      screen.className = `screen ${next === State.GO ? 'go' : next === State.FALSE ? 'false' : next === State.WAITING ? 'wait' : 'ready'}`;
+    };
+
+    const setStatus = (text) => {
+      statusEl.textContent = text;
+      srStatus.textContent = text;
+    };
+
+    const beep = (freq = 520, duration = 100) => {
+      if (!soundOn) return;
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.value = 0.08;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      setTimeout(() => {
+        osc.stop();
+        ctx.close();
+      }, duration);
+    };
+
+    const reset = () => {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+      startTime = 0;
+      timerEl.textContent = '—';
+      hintEl.textContent = 'Wait for green, then tap as fast as you can.';
+      setStatus('Tap anywhere to start.');
+      setState(State.IDLE);
+    };
+
+    const start = () => {
+      if (state !== State.IDLE && state !== State.RESULT && state !== State.FALSE) return;
+      setState(State.WAITING);
+      setStatus('Get ready...');
+      hintEl.textContent = 'Don\'t tap until the screen turns green.';
+      const delay = 2000 + Math.random() * 3000;
+      timeoutId = setTimeout(() => {
+        setState(State.GO);
+        setStatus('Tap now!');
+        hintEl.textContent = 'Go!';
+        startTime = performance.now();
+        beep(720, 90);
+      }, delay);
+    };
+
+    const falseStart = () => {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+      setState(State.FALSE);
+      setStatus('False start! Tap to try again.');
+      hintEl.textContent = 'You tapped before green.';
+      timerEl.textContent = '—';
+      beep(220, 180);
+    };
+
+    const record = () => {
+      const reaction = Math.max(0, Math.round(performance.now() - startTime));
+      timerEl.textContent = `${reaction} ms`;
+      setState(State.RESULT);
+      setStatus('Nice! Tap to play again.');
+      hintEl.textContent = 'Try to beat your time.';
+      beep(880, 100);
+    };
+
+    const onTap = () => {
+      if (state === State.WAITING) {
+        falseStart();
+        return;
+      }
+      if (state === State.GO) {
+        record();
+        return;
+      }
+      start();
+    };
+
+    tapTarget.addEventListener('pointerdown', onTap);
+    restartBtn.addEventListener('click', reset);
+    soundBtn.addEventListener('click', () => {
+      soundOn = !soundOn;
+      soundBtn.textContent = `Sound: ${soundOn ? 'On' : 'Off'}`;
+      soundBtn.setAttribute('aria-pressed', String(soundOn));
+      if (soundOn) beep(620, 70);
+    });
+
+    reset();
+  </script>
+</body>
+</html>
