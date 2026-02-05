@@ -105,11 +105,6 @@
     .screen.go { background: var(--accent); }
     .screen.false { background: var(--warn); }
 
-    .tap-target {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-    }
 
     .sr-only {
       position: absolute;
@@ -125,7 +120,6 @@
 </head>
 <body>
   <div class="screen ready" id="screen" aria-hidden="true"></div>
-  <div class="tap-target" id="tapTarget" aria-label="Tap to play"></div>
 
   <main class="app" role="main">
     <h1>Reaction Time</h1>
@@ -142,7 +136,6 @@
 
   <script>
     const screen = document.getElementById('screen');
-    const tapTarget = document.getElementById('tapTarget');
     const statusEl = document.getElementById('status');
     const timerEl = document.getElementById('timer');
     const hintEl = document.getElementById('hint');
@@ -246,7 +239,8 @@
       shareBtn.disabled = false;
     };
 
-    const onTap = () => {
+    const onTap = (event) => {
+      if (event.target.closest('button')) return;
       if (state === State.WAITING) {
         falseStart();
         return;
@@ -258,7 +252,7 @@
       start();
     };
 
-    tapTarget.addEventListener('pointerdown', onTap);
+    document.addEventListener('pointerdown', onTap);
     restartBtn.addEventListener('click', reset);
     soundBtn.addEventListener('click', () => {
       soundOn = !soundOn;
