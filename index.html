@@ -133,6 +133,7 @@
     <div class="controls">
       <button id="restartBtn" type="button">Restart</button>
       <button id="soundBtn" type="button" aria-pressed="false">Sound: Off</button>
+      <button id="shareBtn" type="button" disabled>Share on WhatsApp</button>
     </div>
     <div class="sr-only" id="srStatus" aria-live="polite"></div>
   </main>
@@ -145,6 +146,7 @@
     const hintEl = document.getElementById('hint');
     const restartBtn = document.getElementById('restartBtn');
     const soundBtn = document.getElementById('soundBtn');
+    const shareBtn = document.getElementById('shareBtn');
     const srStatus = document.getElementById('srStatus');
 
     const State = {
@@ -159,6 +161,7 @@
     let startTime = 0;
     let timeoutId = null;
     let soundOn = false;
+    let lastReaction = null;
 
     const setState = (next) => {
       state = next;
@@ -194,6 +197,8 @@
       timerEl.textContent = '—';
       hintEl.textContent = 'Wait for green, then tap as fast as you can.';
       setStatus('Tap anywhere to start.');
+      shareBtn.disabled = true;
+      lastReaction = null;
       setState(State.IDLE);
     };
 
@@ -220,15 +225,19 @@
       hintEl.textContent = 'You tapped before green.';
       timerEl.textContent = '—';
       beep(220, 180);
+      shareBtn.disabled = true;
+      lastReaction = null;
     };
 
     const record = () => {
       const reaction = Math.max(0, Math.round(performance.now() - startTime));
+      lastReaction = reaction;
       timerEl.textContent = `${reaction} ms`;
       setState(State.RESULT);
       setStatus('Nice! Tap to play again.');
       hintEl.textContent = 'Try to beat your time.';
       beep(880, 100);
+      shareBtn.disabled = false;
     };
 
     const onTap = () => {
@@ -250,6 +259,12 @@
       soundBtn.textContent = `Sound: ${soundOn ? 'On' : 'Off'}`;
       soundBtn.setAttribute('aria-pressed', String(soundOn));
       if (soundOn) beep(620, 70);
+    });
+    shareBtn.addEventListener('click', () => {
+      if (lastReaction === null) return;
+      const text = `I just scored ${lastReaction} ms on this reaction time game! Can you beat it?`;
+      const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
     });
 
     reset();
