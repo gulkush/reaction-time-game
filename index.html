@@ -531,8 +531,8 @@
     const registerAttempt = (value) => {
       if (challengeId) {
         saveAttempt(value);
-        const currentCount = currentPlayers[playerId]?.attempts?.length || 0;
-        updateAttemptsInfo(currentCount + 1);
+        attemptsLeft = Math.max(0, attemptsLeft - 1);
+        attemptsInfo.textContent = `Attempts left: ${attemptsLeft}`;
       } else {
         localAttempts = Math.min(5, localAttempts + 1);
         if (localAttemptValues.length < 5) {
