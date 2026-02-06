@@ -30,7 +30,8 @@
       align-content: start;
       justify-items: center;
       padding: 24px 0 48px;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -49,8 +50,8 @@
       backdrop-filter: blur(10px);
       position: relative;
       z-index: 2;
-      max-height: calc(100vh - 48px);
-      overflow-y: auto;
+      max-height: none;
+      overflow: visible;
     }
 
     h1 {
@@ -322,7 +323,7 @@
         padding: 16px;
         gap: 12px;
         margin: 24px 0;
-        max-height: calc(100vh - 32px);
+        max-height: none;
       }
 
       h1 {
