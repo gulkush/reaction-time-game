@@ -202,11 +202,15 @@
     .grid-wrap {
       display: grid;
       gap: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 6px;
     }
 
     .grid {
       display: grid;
       grid-template-columns: minmax(120px, 1.2fr) repeat(5, minmax(64px, 1fr));
+      min-width: 520px;
       gap: 6px;
       text-align: center;
       font-size: 0.9rem;
@@ -613,6 +617,16 @@
       attemptsInfo.textContent = `Attempts left: ${attemptsLeft}`;
     };
 
+    const normalizeAttempts = (attemptsRaw) => {
+      if (!attemptsRaw) return [];
+      if (Array.isArray(attemptsRaw)) return attemptsRaw;
+      return Object.keys(attemptsRaw)
+        .map((key) => Number(key))
+        .filter((key) => Number.isFinite(key))
+        .sort((a, b) => a - b)
+        .map((key) => attemptsRaw[key]);
+    };
+
     const renderGrid = () => {
       if (!challengeId) {
         const rows = [];
@@ -626,7 +640,7 @@
         rows.push('<div class="cell name">You</div>');
         for (let i = 0; i < 5; i += 1) {
           const value = localAttemptValues[i];
-          if (!value) {
+          if (value === undefined || value === null) {
             rows.push('<div class="cell">—</div>');
           } else if (value === 'Foul') {
             rows.push('<div class="cell">Foul</div>');
@@ -649,7 +663,7 @@
         rows.push(`<div class="cell header">#${i}</div>`);
       }
       const playersWithBest = players.map((player) => {
-        const attempts = player?.attempts || [];
+        const attempts = normalizeAttempts(player?.attempts);
         const best = attempts
           .filter((value) => typeof value === 'number')
           .reduce((bestValue, value) => (bestValue === null || value < bestValue ? value : bestValue), null);
@@ -678,7 +692,7 @@
         rows.push(`<div class="cell name">${name}</div>`);
         for (let i = 0; i < 5; i += 1) {
           const value = attempts[i];
-          if (!value) {
+          if (value === undefined || value === null) {
             rows.push('<div class="cell">—</div>');
           } else if (value === 'Foul') {
             rows.push('<div class="cell">Foul</div>');
@@ -733,7 +747,7 @@
         renderGrid();
         const me = currentPlayers[playerId];
         if (me?.attempts) {
-          updateAttemptsInfo(me.attempts.length);
+          updateAttemptsInfo(normalizeAttempts(me.attempts).length);
         }
         if (me && !isJoined) {
           isJoined = true;
