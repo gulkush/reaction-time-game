@@ -30,8 +30,7 @@
       align-content: start;
       justify-items: center;
       padding: 24px 0 48px;
-      overflow-y: auto;
-      overflow-x: hidden;
+      overflow: hidden;
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -50,8 +49,8 @@
       backdrop-filter: blur(10px);
       position: relative;
       z-index: 2;
-      max-height: none;
-      overflow: visible;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
     }
 
     h1 {
@@ -209,14 +208,11 @@
       padding-bottom: 6px;
       width: 100%;
       max-width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
     }
 
     .grid {
       display: grid;
       grid-template-columns: minmax(120px, 1.2fr) repeat(5, minmax(64px, 1fr));
-      min-width: 560px;
       width: 100%;
       gap: 6px;
       text-align: center;
@@ -327,7 +323,7 @@
         padding: 16px;
         gap: 12px;
         margin: 24px 0;
-        max-height: none;
+        max-height: calc(100vh - 32px);
       }
 
       h1 {
