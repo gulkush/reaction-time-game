@@ -30,6 +30,8 @@
       align-content: start;
       justify-items: center;
       padding: 24px 0 48px;
+      overflow-y: auto;
+      overflow-x: hidden;
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -202,15 +204,14 @@
     .grid-wrap {
       display: grid;
       gap: 8px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
       padding-bottom: 6px;
+      width: 100%;
     }
 
     .grid {
       display: grid;
       grid-template-columns: minmax(120px, 1.2fr) repeat(5, minmax(64px, 1fr));
-      min-width: 520px;
+      min-width: 0;
       gap: 6px;
       text-align: center;
       font-size: 0.9rem;
@@ -346,6 +347,11 @@
       #soundBtn,
       #shareBtn {
         display: none;
+      }
+
+      .grid {
+        grid-template-columns: minmax(90px, 1fr) repeat(5, minmax(44px, 1fr));
+        font-size: 0.78rem;
       }
     }
 
